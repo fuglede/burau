@@ -95,11 +95,21 @@ The above example can be reproduced using the functionality of this Python
 module as follows:
 
 >>> calculate_polynomial(cap_west=2, cap_east=1, cup_west=3, cup_east=2)
-defaultdict(int, {0: 1, -2: 1, -4: 1, -8: -1, -10: -1})
+(DictType[int64,int64]<iv=None>({0: 1, -2: 1, -4: 1, -8: -1, -10: -1}),
+ True,
+ 5)
 
-Here, the output is a dictionary mapping a power of the polynomial to the
-coefficient of that power. A kernel element thus corresponds to the empty
-dictionary.
+Here, the first output is a dictionary mapping a power of the polynomial to the
+coefficient of that power. The second output indicates that the curve beta is
+a connected curve (an example for which this is not the case is the
+input (1, 1, 3, 3)). The third output is the number of crossings with
+:math:`\alpha` encountered along the way.
+
+A kernel element thus corresponds to the empty dictionary. The implementation
+uses Numba under the hood to improve the speed of the calculation. We also
+provide a more vanilla Python implementation which is about 100x slower than
+the Numba-friendly one, but is easier to read and can be used if system
+restrictions make it impossible to run Numba.
 
 References
 ----------
@@ -113,6 +123,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 import logging
 import warnings
+
+import numpy as np
+from numba import njit
+from numba.core import types
+from numba.typed import Dict
 
 
 @dataclass
@@ -164,6 +179,7 @@ class Curve:
         self.level = 0
         self.steps = 0
         self.done = False
+        self.num_crossings = 0
 
     def _intersecting_alpha(self):
         return self.cup_west <= self.current_strand\
@@ -183,6 +199,8 @@ class Curve:
 
     def _intersect_alpha(self):
         self.polynomial[self.level] += 1 if self.southbound else -1
+        self.num_crossings += 1
+        # Get rid of terms with zero coefficients
         if self.polynomial[self.level] == 0:
             del self.polynomial[self.level]
 
@@ -196,6 +214,10 @@ class Curve:
         if not self.done:
             warnings.warn('beta has not yet been traversed')
         return sum(abs(v) for v in self.polynomial.values())
+
+    def run_to_end(self):
+        for _ in self:
+            pass
 
     def __next__(self):
         r"""Move along math:`\beta`."""
@@ -284,9 +306,132 @@ class Curve:
         return self
 
 
-def calculate_polynomial(cap_left: int, cap_right: int, cup_left: int,
-                         cup_right: int):
-    curve = Curve(cap_left, cap_right, cup_left, cup_right)
-    for _ in curve:
-        pass
-    return curve.polynomial
+@njit
+def calculate_polynomial_impl(cap_west, cap_east, cup_west, cup_east):
+    cap_outer = cup_west + cup_east - (cap_west + cap_east + 1)
+    """Numba-friendly implementation of polynomial calculation
+    
+    This is more or less a one-to-one port of the pure-Python implementation
+    above, with all of the gory duplication that comes with that. The only real
+    differences are using arrays to represent pairings, and using Numba's typed
+    dictionary to represent the polynomial.
+    """
+    if cap_outer < 0:
+        raise ValueError('inadmissible cap/cup widths')
+    num_strands = 2 * (cup_west + cup_east)
+    northwest_puncture = cap_outer + cap_west
+    northeast_puncture = cap_outer + 2 * cap_west + 1 + cap_east
+
+    # Compared to our pure-Python implementation above, we now use arrays
+    # instead of dictionaries to simplify access.
+    north_pairing = np.empty(num_strands, dtype=np.int_)
+    for i in range(cap_outer):
+        j = num_strands - (i + 1)
+        north_pairing[i] = j
+        north_pairing[num_strands - (i + 1)] = i
+    for i in range(cap_west):
+        north_pairing[northwest_puncture - (i + 1)] =\
+            northwest_puncture + i + 1
+        north_pairing[northwest_puncture + i + 1] =\
+            northwest_puncture - (i + 1)
+    for i in range(cap_east):
+        north_pairing[northeast_puncture - (i + 1)] = \
+            northeast_puncture + i + 1
+        north_pairing[northeast_puncture + i + 1] = \
+            northeast_puncture - (i + 1)
+
+    south_pairing = np.empty(num_strands, dtype=np.int_)
+    for i in range(cup_west):
+        south_pairing[cup_west - (i + 1)] = cup_west + i
+        south_pairing[cup_west + i] = cup_west - (i + 1)
+    for i in range(cup_east):
+        south_pairing[2 * cup_west + cup_east - (i + 1)]\
+            = 2 * cup_west + cup_east + i
+        south_pairing[2 * cup_west + cup_east + i]\
+            = 2 * cup_west + cup_east - (i + 1)
+
+    current_strand = northwest_puncture
+    at_north = True
+    southbound = True
+    polynomial = Dict.empty(key_type=types.int64, value_type=types.int64)
+    level = 0
+    steps = 0
+    num_crossings = 0
+
+    def intersecting_alpha(strand):
+        return cup_west <= strand < 2 * cup_west + cup_east
+
+    def crossing_northwest_ramp(strand):
+        return strand < northwest_puncture
+
+    def crossing_northeast_ramp(strand):
+        return strand > northeast_puncture
+
+    def crossing_southwest_ramp(strand):
+        return strand < cup_west
+
+    def crossing_southeast_ramp(strand):
+        return strand >= 2 * cup_west + cup_east
+
+    while not at_north or current_strand != northeast_puncture:
+        steps += 1
+        # As we move along the path, we update our polynomial
+        if at_north:
+            if southbound:
+                # Move south, stay at same strand, but keep track of crossings
+                # with ramps and alpha
+                if crossing_northwest_ramp(current_strand):
+                    level += 1
+                if crossing_southwest_ramp(current_strand):
+                    level += 1
+                if crossing_northeast_ramp(current_strand):
+                    level -= 1
+                if crossing_southeast_ramp(current_strand):
+                    level -= 1
+                if intersecting_alpha(current_strand):
+                    polynomial[level] = polynomial.get(level, 0) + 1
+                    num_crossings += 1
+                    if polynomial[level] == 0:
+                        del polynomial[level]
+                at_north = False
+            else:
+                current_strand = north_pairing[current_strand]
+                southbound = True
+        else:
+            if southbound:
+                # Currently facing south, so follow pairing, stay south,
+                # but face north
+                current_strand = south_pairing[current_strand]
+                southbound = False
+            else:
+                # Move north, stay at same strand, but keep track of crossings
+                # with ramps and alpha
+                if crossing_southwest_ramp(current_strand):
+                    level -= 1
+                if crossing_northwest_ramp(current_strand):
+                    level -= 1
+                if crossing_southeast_ramp(current_strand):
+                    level += 1
+                if crossing_northeast_ramp(current_strand):
+                    level += 1
+                if intersecting_alpha(current_strand):
+                    polynomial[level] = polynomial.get(level, 0) - 1
+                    num_crossings += 1
+                    # Get rid of terms with zero coefficients
+                    if polynomial[level] == 0:
+                        del polynomial[level]
+                at_north = True
+    is_beta_connected = steps == 2 * num_strands - 1
+    return polynomial, is_beta_connected, num_crossings
+
+
+def calculate_polynomial(cap_west: int, cap_east: int,
+                         cup_west: int, cup_east: int,
+                         use_numba=True):
+    if use_numba:
+        return calculate_polynomial_impl(cap_west, cap_east,
+                                         cup_west, cup_east)
+
+    curve = Curve(cap_west, cap_east, cup_west, cup_east)
+    curve.run_to_end()
+    return curve.polynomial, curve.is_beta_connected(), curve.num_crossings
