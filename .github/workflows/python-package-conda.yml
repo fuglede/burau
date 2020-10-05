@@ -1,0 +1,27 @@
+name: Lint and test via conda
+
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+        $CONDA/bin/conda env update --file environment.yml --name base
+    - name: Lint with flake8
+      run: |
+        $CONDA/bin/conda install flake8
+        $CONDA/bin/flake8 . --count --exit-zero --show-source --statistics --max-line-length=79
+    - name: Test with pytest
+      run: |
+        conda install pytest
+        $CONDA/bin/pytest --doctest-glob="*.rst"
