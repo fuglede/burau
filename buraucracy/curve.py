@@ -189,7 +189,7 @@ class Curve:
 def calculate_polynomial_impl(cap_west, cap_east, cup_west, cup_east):
     cap_outer = cup_west + cup_east - (cap_west + cap_east + 1)
     """Numba-friendly implementation of polynomial calculation
-    
+
     This is more or less a one-to-one port of the pure-Python implementation
     above, with all of the gory duplication that comes with that. The only real
     differences are using arrays to represent pairings, and using Numba's typed
