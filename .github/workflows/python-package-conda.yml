@@ -20,7 +20,7 @@ jobs:
     - name: Lint with flake8
       run: |
         $CONDA/bin/conda install flake8
-        $CONDA/bin/flake8 . --count --exit-zero --show-source --statistics --max-line-length=79
+        $CONDA/bin/flake8 . --count --show-source --statistics --max-line-length=79
     - name: Test with pytest
       run: |
         conda install pytest
