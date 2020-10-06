@@ -2,7 +2,7 @@ Buraucracy
 ==========
 
 Methods for finding kernel elements of the :math:`B_4` Burau representation,
-or helping to show that none exist.
+or helping to show that no non-trivial elements of the kernel exist.
 
 Background
 ----------
