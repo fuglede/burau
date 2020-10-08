@@ -8,7 +8,7 @@ Background
 ----------
 Here, we follow the lead from Bigelow [0]_ and consider a particular family of
 pairs of curves in the four-punctured disc. We follow more or less the same
-prescription as in Bigelow's C implementation currently available at
+prescription as in Bigelow's C implementation currently available at::
 
     https://github.com/freshbugs/burau4/blob/master/iv.c
 
@@ -94,6 +94,10 @@ finding a non-trivial :math:`\beta` so that the above polynomial is 0.
 
 Usage
 -----
+
+The package can be installed from PyPI::
+
+    pip install burau
 
 The above example can be reproduced using the functionality of this Python
 module as follows:
