@@ -1,5 +1,5 @@
-Buraucracy
-==========
+Burau
+=====
 
 Methods for finding kernel elements of the :math:`B_4` Burau representation,
 or helping to show that no non-trivial elements of the kernel exist.
@@ -98,7 +98,7 @@ Usage
 The above example can be reproduced using the functionality of this Python
 module as follows:
 
->>> from buraucracy.curve import calculate_polynomial
+>>> from burau.curve import calculate_polynomial
 >>> calculate_polynomial(cap_west=2, cap_east=1, cup_west=3, cup_east=2)
 (DictType[int64,int64]<iv=None>({0: 1, -2: 1, -4: 1, -8: -1, -10: -1}), True, 5)
 

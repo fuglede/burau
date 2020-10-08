@@ -18,36 +18,43 @@ class Curve:
     cup_east: int
 
     def __post_init__(self):
-        self.cap_outer = self.cup_west + self.cup_east - \
-                         (self.cap_west + self.cap_east + 1)
+        self.cap_outer = (
+            self.cup_west + self.cup_east - (self.cap_west + self.cap_east + 1)
+        )
         self.num_strands = 2 * (self.cup_west + self.cup_east)
         if self.cap_outer < 0:
-            raise ValueError('inadmissible cap/cup widths')
+            raise ValueError("inadmissible cap/cup widths")
         self.northwest_puncture = self.cap_outer + self.cap_west
-        self.northeast_puncture = self.cap_outer + 2 * self.cap_west + 1 \
-            + self.cap_east
+        self.northeast_puncture = (
+            self.cap_outer + 2 * self.cap_west + 1 + self.cap_east
+        )
 
         # Create the two pairings between the strands
         self.north_pairing = {}
         for i in range(self.cap_outer):
             self.north_pairing[i] = self.num_strands - (i + 1)
         for i in range(self.cap_west):
-            self.north_pairing[self.northwest_puncture - (i + 1)] = \
+            self.north_pairing[self.northwest_puncture - (i + 1)] = (
                 self.northwest_puncture + i + 1
+            )
         for i in range(self.cap_east):
-            self.north_pairing[self.northeast_puncture - (i + 1)] = \
+            self.north_pairing[self.northeast_puncture - (i + 1)] = (
                 self.northeast_puncture + i + 1
+            )
         self.north_pairing.update(
-            [(v, k) for k, v in self.north_pairing.items()])
+            [(v, k) for k, v in self.north_pairing.items()]
+        )
 
         self.south_pairing = {}
         for i in range(self.cup_west):
             self.south_pairing[self.cup_west - (i + 1)] = self.cup_west + i
         for i in range(self.cup_east):
-            self.south_pairing[2 * self.cup_west + self.cup_east - (
-                        i + 1)] = 2 * self.cup_west + self.cup_east + i
+            self.south_pairing[2 * self.cup_west + self.cup_east - (i + 1)] = (
+                2 * self.cup_west + self.cup_east + i
+            )
         self.south_pairing.update(
-            [(v, k) for k, v in self.south_pairing.items()])
+            [(v, k) for k, v in self.south_pairing.items()]
+        )
 
         # We start at level 0 at our northwest puncture moving
         # towards the south.
@@ -61,8 +68,11 @@ class Curve:
         self.num_crossings = 0
 
     def _intersecting_alpha(self):
-        return self.cup_west <= self.current_strand\
-               < 2 * self.cup_west + self.cup_east
+        return (
+            self.cup_west
+            <= self.current_strand
+            < 2 * self.cup_west + self.cup_east
+        )
 
     def _crossing_northwest_ramp(self):
         return self.current_strand < self.northwest_puncture
@@ -85,13 +95,15 @@ class Curve:
 
     def is_beta_connected(self):
         if not self.done:
-            raise RuntimeError('connectedness can only be checked once beta '
-                               'has been traversed')
+            raise RuntimeError(
+                "connectedness can only be checked once beta "
+                "has been traversed"
+            )
         return self.steps == 2 * self.num_strands - 1
 
     def norm(self):
         if not self.done:
-            warnings.warn('beta has not yet been traversed')
+            warnings.warn("beta has not yet been traversed")
         return sum(abs(v) for v in self.polynomial.values())
 
     def run_to_end(self):
@@ -102,8 +114,9 @@ class Curve:
         r"""Move along math:`\beta`."""
         logging.debug(
             f'At {"north" if self.at_north else "south"} end of'
-            f'strand {self.current_strand}, '
-            f'facing {"south" if self.southbound else "north"}')
+            f"strand {self.current_strand}, "
+            f'facing {"south" if self.southbound else "north"}'
+        )
         if self.at_north and self.current_strand == self.northeast_puncture:
             self.done = True
             raise StopIteration
@@ -117,28 +130,33 @@ class Curve:
                 if self._crossing_northwest_ramp():
                     self.level += 1
                     logging.debug(
-                        f'Going up northwest ramp. '
-                        f'Now at level {self.level}.')
+                        f"Going up northwest ramp. "
+                        f"Now at level {self.level}."
+                    )
                 if self._crossing_southwest_ramp():
                     self.level += 1
                     logging.debug(
-                        f'Going up southwest ramp. '
-                        f'Now at level {self.level}.')
+                        f"Going up southwest ramp. "
+                        f"Now at level {self.level}."
+                    )
                 if self._crossing_northeast_ramp():
                     self.level -= 1
                     logging.debug(
-                        f'Going down northeast ramp. '
-                        f'Now at level {self.level}.')
+                        f"Going down northeast ramp. "
+                        f"Now at level {self.level}."
+                    )
                 if self._crossing_southeast_ramp():
                     self.level -= 1
                     logging.debug(
-                        f'Going down southeast ramp. '
-                        f'Now at level {self.level}.')
+                        f"Going down southeast ramp. "
+                        f"Now at level {self.level}."
+                    )
                 if self._intersecting_alpha():
                     self._intersect_alpha()
                     logging.debug(
-                        f'Intersecting alpha from above '
-                        f'at level {self.level}.')
+                        f"Intersecting alpha from above "
+                        f"at level {self.level}."
+                    )
                 self.at_north = False
             else:
                 # Currently facing north, so follow pairing, stay north,
@@ -157,28 +175,33 @@ class Curve:
                 if self._crossing_southwest_ramp():
                     self.level -= 1
                     logging.debug(
-                        f'Going down southwest ramp. '
-                        f'Now at level {self.level}.')
+                        f"Going down southwest ramp. "
+                        f"Now at level {self.level}."
+                    )
                 if self._crossing_northwest_ramp():
                     self.level -= 1
                     logging.debug(
-                        f'Going down northwest ramp. '
-                        f'Now at level {self.level}.')
+                        f"Going down northwest ramp. "
+                        f"Now at level {self.level}."
+                    )
                 if self._crossing_southeast_ramp():
                     self.level += 1
                     logging.debug(
-                        f'Going up southeast ramp. '
-                        f'Now at level {self.level}.')
+                        f"Going up southeast ramp. "
+                        f"Now at level {self.level}."
+                    )
                 if self._crossing_northeast_ramp():
                     self.level += 1
                     logging.debug(
-                        f'Going up northeast ramp. '
-                        f'Now at level {self.level}.')
+                        f"Going up northeast ramp. "
+                        f"Now at level {self.level}."
+                    )
                 if self._intersecting_alpha():
                     self._intersect_alpha()
                     logging.debug(
-                        f'Intersecting alpha from below '
-                        f'at level {self.level}.')
+                        f"Intersecting alpha from below "
+                        f"at level {self.level}."
+                    )
                 self.at_north = True
 
     def __iter__(self):
@@ -196,7 +219,7 @@ def calculate_polynomial_impl(cap_west, cap_east, cup_west, cup_east):
     dictionary to represent the polynomial.
     """
     if cap_outer < 0:
-        raise ValueError('inadmissible cap/cup widths')
+        raise ValueError("inadmissible cap/cup widths")
     num_strands = 2 * (cup_west + cup_east)
     northwest_puncture = cap_outer + cap_west
     northeast_puncture = cap_outer + 2 * cap_west + 1 + cap_east
@@ -209,25 +232,31 @@ def calculate_polynomial_impl(cap_west, cap_east, cup_west, cup_east):
         north_pairing[i] = j
         north_pairing[num_strands - (i + 1)] = i
     for i in range(cap_west):
-        north_pairing[northwest_puncture - (i + 1)] =\
+        north_pairing[northwest_puncture - (i + 1)] = (
             northwest_puncture + i + 1
-        north_pairing[northwest_puncture + i + 1] =\
-            northwest_puncture - (i + 1)
+        )
+        north_pairing[northwest_puncture + i + 1] = northwest_puncture - (
+            i + 1
+        )
     for i in range(cap_east):
-        north_pairing[northeast_puncture - (i + 1)] = \
+        north_pairing[northeast_puncture - (i + 1)] = (
             northeast_puncture + i + 1
-        north_pairing[northeast_puncture + i + 1] = \
-            northeast_puncture - (i + 1)
+        )
+        north_pairing[northeast_puncture + i + 1] = northeast_puncture - (
+            i + 1
+        )
 
     south_pairing = np.empty(num_strands, dtype=np.int_)
     for i in range(cup_west):
         south_pairing[cup_west - (i + 1)] = cup_west + i
         south_pairing[cup_west + i] = cup_west - (i + 1)
     for i in range(cup_east):
-        south_pairing[2 * cup_west + cup_east - (i + 1)]\
-            = 2 * cup_west + cup_east + i
-        south_pairing[2 * cup_west + cup_east + i]\
-            = 2 * cup_west + cup_east - (i + 1)
+        south_pairing[2 * cup_west + cup_east - (i + 1)] = (
+            2 * cup_west + cup_east + i
+        )
+        south_pairing[2 * cup_west + cup_east + i] = (
+            2 * cup_west + cup_east - (i + 1)
+        )
 
     current_strand = northwest_puncture
     at_north = True
@@ -304,12 +333,13 @@ def calculate_polynomial_impl(cap_west, cap_east, cup_west, cup_east):
     return polynomial, is_beta_connected, num_crossings
 
 
-def calculate_polynomial(cap_west: int, cap_east: int,
-                         cup_west: int, cup_east: int,
-                         use_numba=True):
+def calculate_polynomial(
+    cap_west: int, cap_east: int, cup_west: int, cup_east: int, use_numba=True
+):
     if use_numba:
-        return calculate_polynomial_impl(cap_west, cap_east,
-                                         cup_west, cup_east)
+        return calculate_polynomial_impl(
+            cap_west, cap_east, cup_west, cup_east
+        )
 
     curve = Curve(cap_west, cap_east, cup_west, cup_east)
     curve.run_to_end()
