@@ -2,8 +2,10 @@ import re
 import setuptools
 
 
-with open("README.rst") as f:
-    long_description = f.read()
+with open("README.rst", "rb") as f:
+    # Explicitly specify encoding to ensure `python setup.py egg_info` works
+    # on Windows.
+    long_description = f.read().decode('utf-8')
     long_description = re.sub(r":math:`(.+?)`", r"\1", long_description)
     long_description = re.sub(r".. math::\n\n", "", long_description)
 
