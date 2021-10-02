@@ -12,7 +12,7 @@ with open("README.rst", "rb") as f:
 
 setuptools.setup(
     name="burau",
-    version="0.0.2",
+    version="0.0.3",
     author="Søren Fuglede Jørgensen",
     author_email="pypi@fuglede.dk",
     description="Search for non-trivial elements of the kernel of the Burau "
