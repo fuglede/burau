@@ -99,6 +99,10 @@ The package can be installed from PyPI::
 
     pip install burau
 
+or it can be obtained from `conda-forge <https://anaconda.org/conda-forge/burau>`_::
+
+    mamba install -c conda-forge burau
+
 The above example can be reproduced using the functionality of this Python
 module as follows:
 
