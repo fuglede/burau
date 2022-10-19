@@ -21,12 +21,11 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        $CONDA/bin/conda env update --file environment.yml --name base
+        pip install --upgrade pip
+        pip install numba numpy pytest flake8
     - name: Lint with flake8
       run: |
-        $CONDA/bin/conda install flake8
-        $CONDA/bin/flake8 . --count --show-source --statistics --max-line-length=79
+        flake8 . --count --show-source --statistics --max-line-length=79
     - name: Test with pytest
       run: |
-        conda install pytest
-        $CONDA/bin/pytest --doctest-glob="*.rst"
+        pytest --doctest-glob="*.rst"
