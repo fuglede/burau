@@ -172,6 +172,12 @@ class Curve:
             else:
                 # Move north, stay at same strand, but keep track of crossings
                 # with ramps and alpha
+                if self._intersecting_alpha():
+                    self._intersect_alpha()
+                    logging.debug(
+                        f"Intersecting alpha from below "
+                        f"at level {self.level}."
+                    )
                 if self._crossing_southwest_ramp():
                     self.level -= 1
                     logging.debug(
@@ -195,12 +201,6 @@ class Curve:
                     logging.debug(
                         f"Going up northeast ramp. "
                         f"Now at level {self.level}."
-                    )
-                if self._intersecting_alpha():
-                    self._intersect_alpha()
-                    logging.debug(
-                        f"Intersecting alpha from below "
-                        f"at level {self.level}."
                     )
                 self.at_north = True
 
@@ -314,6 +314,12 @@ def calculate_polynomial_impl(cap_west, cap_east, cup_west, cup_east):
             else:
                 # Move north, stay at same strand, but keep track of crossings
                 # with ramps and alpha
+                if intersecting_alpha(current_strand):
+                    polynomial[level] = polynomial.get(level, 0) - 1
+                    num_crossings += 1
+                    # Get rid of terms with zero coefficients
+                    if polynomial[level] == 0:
+                        del polynomial[level]
                 if crossing_southwest_ramp(current_strand):
                     level -= 1
                 if crossing_northwest_ramp(current_strand):
@@ -322,12 +328,6 @@ def calculate_polynomial_impl(cap_west, cap_east, cup_west, cup_east):
                     level += 1
                 if crossing_northeast_ramp(current_strand):
                     level += 1
-                if intersecting_alpha(current_strand):
-                    polynomial[level] = polynomial.get(level, 0) - 1
-                    num_crossings += 1
-                    # Get rid of terms with zero coefficients
-                    if polynomial[level] == 0:
-                        del polynomial[level]
                 at_north = True
     is_beta_connected = steps == 2 * num_strands - 1
     return polynomial, is_beta_connected, num_crossings
