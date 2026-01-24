@@ -1,3 +1,5 @@
+Note: This repository has been moved to https://codeberg.org/fuglede/burau
+
 Burau
 =====
 
